@@ -1,0 +1,93 @@
+# sudoku solver (adapted from Thorsten Altenkirch's algorithm) 
+# by Jason R. Carroll - Feb. 20, 2020 
+# original computerphile video - https://www.youtube.com/watch?v=G_UYXzGuqvM 
+# v1 - original version, no user input 
+# v2 - added interface for user to input puzzle, added elapsed solving time 
+# v3 - added error trapping and made program friendlier to use 
+
+import numpy, time
+
+print('\nSudoku Solver')
+print("By Jason R. Carroll (adapted from Thorsten Altenkirch's algorithm)")
+print('-- Input the Sudoku puzzle row by row (9 rows)')
+print('-- Enter exactly 9 digits per row, using 0 for empty spaces')
+print('-- Example: 530070000 (enter numbers only)')
+print('-- Enter a blank line if you wish to start over')
+
+# have the user input the sudoku puzzle, build into a 9x9 matrix 
+
+grid = []
+r = 1
+
+while r <= 9:
+    try:
+        row = input('\nRow ' + str(r) + ': ')
+        if row == '':
+            print('OK, starting over at your request...')
+            r = 1
+            grid = []
+        elif len(str(row)) != 9:
+            print('Input error (each row must be 9 digits)...starting over...')
+            r = 1
+            grid = []
+        else:
+            rowX = [int(d) for d in str(row)] # 'eXplodes' the row of numbers into individual digits 
+            grid.append(rowX)
+            print()
+            print(numpy.matrix(grid)) # numpy.matrix() allows orderly printing of grid 
+            r = r + 1
+    except ValueError:
+        print('Input error (numbers only, please)...starting over...')
+        r = 1
+        grid = []
+
+input('\nPress Enter to solve...')
+print('\nSolving...\n')
+
+start = time.perf_counter()
+
+# the 'possible' function checks the column, row, and 3x3 square to see if 'n' can be placed there 
+
+def possible(y,x,n):
+    global grid
+    for i in range(9): # check row 
+        if grid[y][i] == n:
+            return False
+    for i in range(9): # check column 
+        if grid[i][x] == n:
+            return False
+    x0 = (x//3)*3 # floor division (//) - divides and returns the integer value of the quotient (dumps the digits after the decimal) 
+    y0 = (y//3)*3
+    for i in range(3): # check 3x3 square 
+        for j in range(3):
+            if grid[y0+i][x0+j] == n:
+                return False
+    return True
+
+# the 'solve' function tries all possible values in every square, if it reachs a dead-end, it puts a '0' there and goes back from whence it came 
+
+def solve():
+    global grid
+    for y in range(9):
+        for x in range(9):
+            if grid[y][x] == 0:
+                for n in range(1,10):
+                    if possible(y,x,n):
+                        grid[y][x] = n
+                        # print(n, end = "") # warning: this drastically slows down the program! prints each number attempted 
+                        # print(numpy.matrix(grid)) # warning: this slows down the program even more! prints the full matrix at each attempt 
+                        solve() # recursively calls the 'solve' function 
+                        grid[y][x] = 0 # if the solve function returns here, it failed, so replace previous try with 0 
+                return
+    finish = time.perf_counter() # if we've returned here, we can't place any more digits, so the puzzle must be full (implying a solutuion) 
+    elapsed = round(finish - start, 6)
+    print('Solved in ' + str(elapsed) + ' seconds.\n')
+    print(numpy.matrix(grid)) # the grid now contains a solution 
+    input('\nPress Enter to find additional solutions, if any...') # this function will attempt to find all possible solutions (most good sudoku puzzles will only have one) 
+
+# main program body simply calls the 'solve' function once 
+
+solve()
+
+print('\nNo additional solutions.')
+input('\nPress Enter to quit...')
